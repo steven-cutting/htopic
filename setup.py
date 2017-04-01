@@ -58,4 +58,7 @@ setup(
     },
     setup_requires=['pytest-runner>=2.6.2'],
     tests_require=['pytest>=2.8.7'],
-    )
+    package_data={
+        'test_files': ['*/test/data/*', ],
+    }
+)

@@ -11,24 +11,33 @@ For creating Gensim models.
 from gensim import models
 
 
-def fit_tfidf(corpus):
-    return models.TfidfModel(corpus)
+def fit_tfidf(corpus, dictionary):
+    return models.TfidfModel(corpus=corpus, dictionary=dictionary)
 
 
-def fit_lsi(corpus, dictionary, numTopics=200):
-    return models.LsiModel(corpus_tfidf, id2word=dictionary, num_topics=num_topics)
+def fit_lsi(corpus, dictionary, num_topics=200):
+    return models.LsiModel(corpus, id2word=dictionary, num_topics=num_topics)
 
 
 def fit_lda(corpus, dictionary=None, num_topics=100, workers=None,
             passes=5, alpha='symmetric', iterations=50, random_state=None):
-    return models.ldamulticore.LdaMulticore(corpus=corpus,
-                                            num_topics=num_topics,
-                                            id2word=dictionary,
-                                            workers=workers,
-                                            passes=passes,
-                                            alpha=alpha,
-                                            random_state=random_state,
-                                            iterations=iterations)
+    if workers:
+        return models.ldamulticore.LdaMulticore(corpus=corpus,
+                                                num_topics=num_topics,
+                                                id2word=dictionary,
+                                                workers=workers,
+                                                passes=passes,
+                                                alpha=alpha,
+                                                random_state=random_state,
+                                                iterations=iterations)
+    else:
+        return models.LdaModel(corpus=corpus,
+                               num_topics=num_topics,
+                               id2word=dictionary,
+                               passes=passes,
+                               alpha=alpha,
+                               random_state=random_state,
+                               iterations=iterations)
 
 
 def to_model_vec_space(model, corpus):
@@ -46,6 +55,6 @@ def load_tfidf(filename):
 def load_lsi(filename):
     return models.LsiModel.load(filename)
 
-    
+
 def load_lda(filename):
     return models.LdaMulticore.load(filename)

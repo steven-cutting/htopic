@@ -35,9 +35,9 @@ def simple_split_txt(txt):
 
     For best results 'txt' should be a unicode string.
     """
-    return (token for token in txt.split())
-            # leave the loose punctuation in.
-            # if not punctuation.__contains__(token))
+    return (token for token in txt.split())  # TODO (sc) Add punctuation removal
+    # leave the loose punctuation in.
+    # if not punctuation.__contains__(token))
 
 
 def simple_split_many(txts):
@@ -77,11 +77,11 @@ def sort_token_counts(seq, g2l=True):
     return sorted(seq, key=tlz.first, reverse=True)
 
 
-def encode_token_in_seq(seq, encoding='utf-8'):
-    return tlz.map(lambda tkn: (tkn[0], tkn[1].encode(encoding)), seq)
+def encode_token_in_row(row, encoding='utf-8'):
+    return (row[0], row[1].encode(encoding))
 
 
-def token_counts_to_cvs(filename, seq, delimiter='\t', sort_f=tlz.identity):
+def token_counts_to_cvs(filename, seq, delimiter='\t', sort_f=tlz.identity, encoding="utf-8"):
     """
     Does not include a header.
     The tuples in 'seq' should have this format:
@@ -94,5 +94,7 @@ def token_counts_to_cvs(filename, seq, delimiter='\t', sort_f=tlz.identity):
     csv.register_dialect('tab-sep', delimiter=delimiter)
     with open(filename, 'wb') as out:
         csv_out = csv.writer(out, 'tab-sep')
-        for row in encode_token_in_seq(seq):
-            csv_out.writerow(row)
+        for row in seq:
+            tlz.pipe(row,
+                     encode_token_in_row,
+                     csv_out.writerow)

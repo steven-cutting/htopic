@@ -8,6 +8,9 @@ __doc__ = """
 Module uses Morfessor to segment words.
 """
 
+import logging
+
+import morfessor
 try:
     import cytoolz as tlz
     from cytoolz import curried as tlzc
@@ -15,11 +18,9 @@ except ImportError:
     import toolz as tlz
     from toolz import curried as tlzc
 
-import morfessor
 
+LOG = logging.getLogger(__name__)
 
-# MODEL_FILE = "/Users/steven_c/projects/h_topic_model/data/toy50k/model/model.bin"
-# SAMPLE_FILE = "/Users/steven_c/projects/h_topic_model/data/toy50k/toy50k/1.1580753.txt.iso"
 
 def split_text(txt):
     """
@@ -37,7 +38,7 @@ def load_morfessor_model(filename):
     return io.read_binary_model_file(filename)
 
 
-def segment_token(model):
+def mk_segment_token(model):
     """
     Returns a closure that uses the models segment methods to segment strings.
     """
@@ -45,8 +46,11 @@ def segment_token(model):
         try:
             return model.segment(token)
         except KeyError:
+            LOG.debug("{}  -  token missing from segment model.")
             # if the token is new
             return model.viterbi_segment(token)
+
+    return segment
 
 
 def should_flatten(flatten=True):
@@ -65,15 +69,16 @@ def segment_text(model, txt, flatten=True):
     """
     Splits the text into tokens and then segments the tokens.
 
-    Curried
+    Curried.
     """
-    segment_f = segment_token(model)
     return tlz.pipe(txt,
                     split_text,
-                    tlzc.map(segment_f),
+                    tlzc.map(mk_segment_token(model)),
                     should_flatten(flatten),
                     list)
 
 
-def segment_many(model, txts):
-    return map(segment_text(model), txts)
+def segment_many(model, txts, flatten=True):
+    return tlz.pipe(txts,
+                    tlzc.map(segment_text(model)),
+                    should_flatten(flatten))

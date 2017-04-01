@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 __title__ = 'h_topic_model'
 __author__ = 'Steven Cutting'
 __author_email__ = 'steven.e.cutting@gmail.com'
@@ -20,15 +19,16 @@ except ImportError:
 STOPLIST = {u"", }
 
 
-def token_in_stoplist(token):
-    if token in STOPLIST:
-        True
+@tlz.curry
+def token_in_stoplist(token, stoplist=STOPLIST):
+    if token in stoplist:
+        return True
     else:
-        False
+        return False
 
 
-def filter_tokens(tokens):
-    return itls.ifilterfalse(token_in_stoplist, tokens)
+def filter_tokens(tokens, stoplist=STOPLIST):
+    return itls.ifilterfalse(token_in_stoplist(stoplist=stoplist), tokens)
 
 
 def mk_dict(tokenSeqs):

@@ -8,7 +8,7 @@ setup(
     name="h_topic_model",
 
     # Semantic versioning. MAJOR.MINOR.MAINTENANCE.(dev1|a1|b1)
-    version="0.0.0.dev1",
+    version="0.0.1.dev1",
 
 
     description="",
@@ -36,14 +36,14 @@ setup(
     keywords='nlp text ngram ngrams Hebrew',
     packages=find_packages(exclude=('bin', 'tests', 'docker',
                                     'data', 'notebooks')),
-    scripts=['h_topic_model/scripts/mkcorpus.py', 'h_topic_model/scripts/mkmodels.py',
-             'h_topic_model/scripts/mkwc.py', 'h_topic_model/scripts/train-morfessor.sh',
-             'h_topic_model/scripts/testhtopic.sh'],
-    entry_points='''
-        [console_scripts]
-        htopic=h_topic_model.scripts.htopic:cli
-        derp=h_topic_model.scripts.derp:cli
-    ''',
+    # scripts=['h_topic_model/scripts/mkcorpus.py', 'h_topic_model/scripts/mkmodels.py',
+    #          'h_topic_model/scripts/mkwc.py', 'h_topic_model/scripts/train-morfessor.sh',
+    #          'h_topic_model/scripts/testhtopic.sh'],
+    scripts=['scripts/htopic'],
+    # entry_points='''
+    #     [console_scripts]
+    #     htopic=scripts.htopic:cli
+    # ''',
     install_requires=['toolz>=0.7.4',
                       'text2math>=0.0.5.dev1',
                       'Morfessor>=2.0.1',
@@ -54,11 +54,11 @@ setup(
     extras_require={
         'fast': ['cytoolz>=0.7.3'],
         'dev': ['cytoolz>=0.7.3'],
-        'test': ['pytest-runner>=2.6.2', 'pytest>=2.8.7'],
+        'test': ['pytest-runner>=2.6.2', 'pytest>=2.8.7', 'coverage>=4.3.4'],
     },
     setup_requires=['pytest-runner>=2.6.2'],
     tests_require=['pytest>=2.8.7'],
     package_data={
-        'test_files': ['*/test/data/*', ],
+        'test_files': ['*/tests/data/*', ],
     }
 )

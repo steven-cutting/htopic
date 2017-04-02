@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 __title__ = 'h_topic_model'
@@ -22,7 +23,7 @@ except ImportError:
     import toolz as tlz
     from toolz import curried as tlzc
 
-from h_topic_model.scripts import s_utils as su
+from scripts import s_utils as su
 from h_topic_model import utils as u
 from h_topic_model import wcfile as wc
 from h_topic_model import segment as seg
@@ -310,3 +311,7 @@ def gettopics(ctx, topic_model_dir):
         # print(u'-----------\t\t----')
         for prob, word in topic:
             print(u"\t{}".format(prob, word).encode("utf-8"))
+
+
+if __name__ == "__main__":
+    cli()

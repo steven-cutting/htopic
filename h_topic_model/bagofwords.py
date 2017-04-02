@@ -15,20 +15,22 @@ try:
 except ImportError:
     import toolz as tlz
 
+from h_topic_model import utils as u
 
-STOPLIST = {u"", }
+
+STOPWORDS = set(u.open_pkg_json_file("data/stopwords.json"))
 
 
 @tlz.curry
-def token_in_stoplist(token, stoplist=STOPLIST):
-    if token in stoplist:
+def token_in_stopwords(token, stopwords=STOPWORDS):
+    if token in stopwords:
         return True
     else:
         return False
 
 
-def filter_tokens(tokens, stoplist=STOPLIST):
-    return itls.ifilterfalse(token_in_stoplist(stoplist=stoplist), tokens)
+def filter_tokens(tokens, stopwords=STOPWORDS):
+    return itls.ifilterfalse(token_in_stopwords(stopwords=stopwords), tokens)
 
 
 def mk_dict(tokenSeqs):

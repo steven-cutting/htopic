@@ -13,7 +13,7 @@ import pytest
 from h_topic_model import bagofwords as bow
 
 
-@pytest.mark.parametrize("string,expected,stoplist",
+@pytest.mark.parametrize("string,expected,stopwords",
                          [(u"foo", True, {u"foo", u"bar", u"baz"}),
                           # Hebrew unicode code points.
                           (u'\u05d4\u05d5\u05d0', True,
@@ -28,11 +28,11 @@ from h_topic_model import bagofwords as bow
                             u'\u05e2\u05dc\u05d9\u05d5',
                             u'\u05db\u05ea\u05d1\u05d4'}),
                           ])
-def test__token_in_stoplist(string, expected, stoplist):
-    assert(bow.token_in_stoplist(string, stoplist=stoplist) == expected)
+def test__token_in_stopwords(string, expected, stopwords):
+    assert(bow.token_in_stopwords(string, stopwords=stopwords) == expected)
 
 
-@pytest.mark.parametrize("tokens,expected,stoplist",
+@pytest.mark.parametrize("tokens,expected,stopwords",
                          [([u"foo", u"bar", u"baz",
                             u'\u05d4\u05d5\u05d0',
                             u'\u05e6\u05d9\u05dc\u05dd',
@@ -45,8 +45,8 @@ def test__token_in_stoplist(string, expected, stoplist):
                            {u"foo", u"bar",
                             u'\u05d4\u05d5\u05d0'}),
                           ])
-def test__filter_tokens(tokens, expected, stoplist):
-    assert(list(bow.filter_tokens(tokens, stoplist=stoplist)) == expected)
+def test__filter_tokens(tokens, expected, stopwords):
+    assert(list(bow.filter_tokens(tokens, stopwords=stopwords)) == expected)
 
 
 @pytest.mark.parametrize("tokens",

@@ -8,9 +8,12 @@ General utils that can be used thoughout the package.
 """
 
 import os
+import json
 
 from text2math import raw2text as r2t
 from text2math.raw2text import verify_unicode, verify_bytestring
+
+import h_topic_model
 
 
 def spelunker_gen(rootdir):
@@ -37,3 +40,25 @@ def ensure_bytestring(string, encoding='utf-8'):
         return verify_bytestring(string)
     except AssertionError:
         return string.encode(encoding)
+
+
+def package_dir():
+    """
+    Full path of the package.
+    """
+    return os.path.dirname(h_topic_model.__file__)
+
+
+def full_pkg_file_path(filename):
+    """
+    'filename' should be the path of the file relative to the package root.
+    """
+    return os.path.join(package_dir(), filename)
+
+
+def open_pkg_json_file(filename):
+    """
+    'filename' should be the path of the file relative to the package root.
+    """
+    with open(full_pkg_file_path(filename)) as f:
+        return json.load(f)

@@ -20,6 +20,7 @@ except ImportError:
     from toolz import curried as tlzc
 
 
+# TODO (sc) move punctuation removal to bagofwords.py
 punctuation = {u"\u05f3",  # ׳  U+05f3  HEBREW PUNCTUATION GERESH
                u"\u05f4",  # ״  U+05f4  HEBREW PUNCTUATION GERSHAYIM
                u"\u0027",  # '  U+0027  APOSTROPHE

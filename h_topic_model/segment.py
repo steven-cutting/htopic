@@ -75,10 +75,11 @@ def segment_text(model, txt, flatten=True):
                     split_text,
                     tlzc.map(mk_segment_token(model)),
                     should_flatten(flatten),
+                    # tlz.concat,
                     list)
 
 
 def segment_many(model, txts, flatten=True):
     return tlz.pipe(txts,
-                    tlzc.map(segment_text(model)),
+                    tlzc.map(segment_text(model, flatten=flatten)),
                     should_flatten(flatten))

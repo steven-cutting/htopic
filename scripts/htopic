@@ -15,7 +15,7 @@ from os import path
 from pprint import pprint
 
 import click
-from arrow import now 
+from arrow import now
 try:
     import cytoolz as tlz
     from cytoolz import curried as tlzc
@@ -26,6 +26,7 @@ except ImportError:
 from scripts import s_utils as su
 from h_topic_model import utils as u
 from h_topic_model import wcfile as wc
+from h_topic_model import segmodel as sm
 from h_topic_model import segment as seg
 from h_topic_model import bagofwords as bow
 from h_topic_model import gmodels as gm
@@ -102,7 +103,7 @@ def mkwc(ctx, input_directory, wcfile, prob):
     runtime = su.log_run_time(ctx.obj["STARTTIME"])
     LOG.info("Finished mkwc")
 
-    
+
 @cli.command(help="""
     Uses morfessor-train to construct a model for string segmentation
     using the provided training data in the form of a file of 'word' counts.
@@ -127,13 +128,29 @@ def morfessor(ctx, morf_model_file, wcfile, encoding):
     LOG.info("Starting morfessor")
     logfile = ctx.obj["LOGFILE"]
     randomState = ctx.obj["RANDOMSTATE"]
-    subprocess.call(["morfessor-train",
-                     "--encoding={}".format(encoding),
-                     "--randseed={}".format(randomState) if randomState else "",
-                     "--traindata-list",
-                     "--logfile={}".format(logfile) if logfile else "",
-                     "-s", morf_model_file,
-                     wcfile])
+
+    LOG.info("Loading word count file {}".format(wcfile))
+    tokendata = sm.load_data(wcfile, encoding=encoding)
+
+    LOG.info("Fitting morfessor segmentation model")
+    model = sm.mkmodel(tokendata, randseed=randomState)
+
+    LOG.info("Saving morfessor segmentation model to {}".format(morf_model_file))
+    sm.save_model(morf_model_file, model)
+
+    seg_file = tlz.pipe(morf_model_file,
+                        lambda f: f.replace(".", "-"),
+                        lambda f: ''.join([f, "-segmentations.txt"]))
+    LOG.info("Saving segmentation file to {}".format(seg_file))
+    sm.save_segmentations(seg_file, model)
+
+    # subprocess.call(["morfessor-train",
+    #                  "--encoding={}".format(encoding),
+    #                  "--randseed={}".format(randomState) if randomState else "",
+    #                  "--traindata-list",
+    #                  "--logfile={}".format(logfile) if logfile else "",
+    #                  "-s", morf_model_file,
+    #                  wcfile])
 
     runtime = su.log_run_time(ctx.obj["STARTTIME"])
     LOG.info("Finished morfessor")
@@ -208,7 +225,7 @@ def mkcorpus(ctx, input_directory, morf_model_file, dict_file, corpus_file, prob
 @cli.command(help="""
 Train Gensim TfIdf and LDA model.
 """)
-@click.option("--topic_model_dir", "-T", type=str, default=D_G_MODELS_P, 
+@click.option("--topic_model_dir", "-T", type=str, default=D_G_MODELS_P,
               help="".join(["Directory to save the Gensim models to. Default: ",
                             D_G_MODELS_P]))
 @click.option("--dict_file", "-D", type=str, default=D_G_DICT_FILE_P,
@@ -259,7 +276,7 @@ def mkmodel(ctx, topic_model_dir, dict_file, corpus_file):
 @click.option("--morf_model_file", "-M", type=str, default=D_MORF_MODEL_FILE_P,
               help="".join(["File that contains the morfessor model to use. Default: ",
                             D_MORF_MODEL_FILE_P]))
-@click.option("--topic_model_dir", "-T", type=str, default=D_G_MODELS_P, 
+@click.option("--topic_model_dir", "-T", type=str, default=D_G_MODELS_P,
               help="".join(["Directory where the Gensim models are. Default: ",
                             D_G_MODELS_P]))
 @click.option("--dict_file", "-D", type=str, default=D_G_DICT_FILE_P,
@@ -294,7 +311,7 @@ def filetopics(ctx, input_file, morf_model_file, topic_model_dir, dict_file, cor
 @cli.command(help="""
     Get Gensim LDA topic descriptions.
 """)
-@click.option("--topic_model_dir", "-T", type=str, default=D_G_MODELS_P, 
+@click.option("--topic_model_dir", "-T", type=str, default=D_G_MODELS_P,
               help="".join(["Directory where the Gensim models are. Default: ",
                             D_G_MODELS_P]))
 @click.pass_context

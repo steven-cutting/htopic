@@ -20,6 +20,7 @@ setup(
     classifiers=['Topic :: Scientific/Engineering :: Artificial Intelligence',
                  'Topic :: Scientific/Engineering :: Information Analysis',
                  'Topic :: Text Processing :: Linguistic',
+                 'License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)',
                  'Intended Audience :: Science/Research',
                  'Operating System :: Unix',
                  'Operating System :: POSIX :: Linux',

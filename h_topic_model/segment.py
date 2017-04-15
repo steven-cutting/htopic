@@ -18,19 +18,10 @@ except ImportError:
     import toolz as tlz
     from toolz import curried as tlzc
 
+from h_topic_model import textproc_utils as tpu
+
 
 LOG = logging.getLogger(__name__)
-
-
-def split_text(txt):
-    """
-    Simply split 'txt' on whitespace.
-    Return generator of all continuous non-whitespace character
-    sequences (e.g. words, punctuation, etc.).
-
-    For best results 'txt' should be a unicode string.
-    """
-    return (token for token in txt.split())
 
 
 def load_morfessor_model(filename):
@@ -38,7 +29,14 @@ def load_morfessor_model(filename):
     return io.read_binary_model_file(filename)
 
 
-def mk_segment_token(model):
+def unpack_viterbi_segment(result):
+    return tlz.pipe(result,
+                    tlz.first,
+                    lambda segs: [segs] if type(segs) in (unicode, str) else segs,
+                    lambda segs: segs if type(segs) == list else list(segs))
+
+
+def mk_segmenter(model):
     """
     Returns a closure that uses the models segment methods to segment strings.
     """
@@ -48,9 +46,15 @@ def mk_segment_token(model):
         except KeyError:
             LOG.debug("{}  -  token missing from segment model.")
             # if the token is new
-            return model.viterbi_segment(token)
+            return tlz.pipe(token,
+                            model.viterbi_segment,
+                            unpack_viterbi_segment)
 
     return segment
+
+
+# For compatablity.
+mk_segment_token = mk_segmenter
 
 
 def should_flatten(flatten=True):
@@ -72,8 +76,8 @@ def segment_text(model, txt, flatten=True):
     Curried.
     """
     return tlz.pipe(txt,
-                    split_text,
-                    tlzc.map(mk_segment_token(model)),
+                    tpu.simple_split_txt,
+                    tlzc.map(mk_segmenter(model)),
                     should_flatten(flatten),
                     # tlz.concat,
                     list)

@@ -20,38 +20,6 @@ except ImportError:
     from toolz import curried as tlzc
 
 
-# TODO (sc) move punctuation removal to bagofwords.py
-punctuation = {u"\u05f3",  # ׳  U+05f3  HEBREW PUNCTUATION GERESH
-               u"\u05f4",  # ״  U+05f4  HEBREW PUNCTUATION GERSHAYIM
-               u"\u0027",  # '  U+0027  APOSTROPHE
-               u"\u0022",  # "  U+0022  QUOTATION MARK
-               }
-
-
-def simple_split_txt(txt):
-    """
-    Simply split 'txt' on whitespace.
-    Return generator of all continuous non-whitespace character
-    sequences (e.g. words, punctuation, etc.).
-
-    For best results 'txt' should be a unicode string.
-    """
-    return (token for token in txt.split())  # TODO (sc) Add punctuation removal
-    # leave the loose punctuation in.
-    # if not punctuation.__contains__(token))
-
-
-def simple_split_many(txts):
-    """
-    Creates a single sequence of all of the continuous non-whitespace
-    character sequences (e.g. words, punctuation, etc.) from all of the strings
-    in txts.
-
-    For best results the strings in txts should be unicode strings.
-    """
-    return tlz.mapcat(simple_split_txt, txts)
-
-
 def count_tokens(tokens):
     """
     Counts the number of occurances of the tokens.
@@ -95,7 +63,7 @@ def token_counts_to_cvs(filename, seq, delimiter='\t', sort_f=tlz.identity, enco
     csv.register_dialect('tab-sep', delimiter=delimiter)
     with open(filename, 'wb') as out:
         csv_out = csv.writer(out, 'tab-sep')
-        for row in seq:
+        for row in sort_f(seq):
             tlz.pipe(row,
                      encode_token_in_row,
                      csv_out.writerow)

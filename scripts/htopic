@@ -25,6 +25,7 @@ except ImportError:
 
 from scripts import s_utils as su
 from h_topic_model import utils as u
+from h_topic_model import textproc_utils as tpu
 from h_topic_model import wcfile as wc
 from h_topic_model import segmodel as sm
 from h_topic_model import segment as seg
@@ -95,7 +96,7 @@ def mkwc(ctx, input_directory, wcfile, prob):
                                   random_state=ctx.obj["RANDOMSTATE"])
     txts = tlz.map(u.load_and_decode, filenames)
 
-    tokenFreqs = tlz.pipe(txts, wc.simple_split_many, wc.count_tokens)
+    tokenFreqs = tlz.pipe(txts, tpu.simple_split_many, wc.count_tokens)
 
     wc.token_counts_to_cvs(wcfile, tokenFreqs)  # dont sort it's not needed
     #                                           # , sort_f=wc.sort_token_counts)

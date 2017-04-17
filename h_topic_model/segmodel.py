@@ -13,7 +13,6 @@ import logging
 import math
 import random
 
-import morfessor
 from morfessor import MorfessorIO
 from morfessor import BaselineModel
 from morfessor.exception import ArgumentException
@@ -29,10 +28,6 @@ except ImportError:
 LOG = logging.getLogger(__name__)
 
 
-# L = lambda : load_data("/Users/steven_c/projects/h_topic_model/data/toy50k/flatcat/wc.csv")
-# H = lambda a: tlz.map(tlz.second, tlz.filter(tlz.first, a))
-
-
 def load_data(trainfilespath, encoding=locale.getpreferredencoding(),
               separator=None, cseparator=r"\s+", lowercase=False):
     # TODO (sc) DOCS!
@@ -41,7 +36,22 @@ def load_data(trainfilespath, encoding=locale.getpreferredencoding(),
                      compound_separator=cseparator,
                      atom_separator=separator,
                      lowercase=lowercase)
-    return io.read_corpus_file(trainfilespath)
+    return io.read_corpus_list_files([trainfilespath,])
+    # return io.read_corpus_file(trainfilespath)
+
+
+def mk_frequency_dampening_func(dampening):
+    """
+    Return frequency dampening function based on dampening.
+    """
+    if dampening == 'none':
+        return None
+    elif dampening == 'log':
+        return lambda x: int(round(math.log(x + 1, 2)))
+    elif dampening == 'ones':
+        return lambda x: 1
+    else:
+        raise ArgumentException("unknown dampening type {}".format(dampening))
 
 
 def mkmodel(data, trainmode='init+batch', forcesplit=['-'], corpusweight=1.0, skips=False,
@@ -57,7 +67,7 @@ def mkmodel(data, trainmode='init+batch', forcesplit=['-'], corpusweight=1.0, sk
     """
     # TODO (sc) DOCS!
     random.seed(randseed)
-    ts = arrow.now()
+    tstart = arrow.now()
 
     model = BaselineModel(forcesplit_list=forcesplit,
                           corpusweight=corpusweight,
@@ -65,14 +75,7 @@ def mkmodel(data, trainmode='init+batch', forcesplit=['-'], corpusweight=1.0, sk
                           nosplit_re=nosplit)
 
     # Set frequency dampening function
-    if dampening == 'none':
-        dampfunc = None
-    elif dampening == 'log':
-        dampfunc = lambda x: int(round(math.log(x + 1, 2)))
-    elif dampening == 'ones':
-        dampfunc = lambda x: 1
-    else:
-        raise ArgumentException("unknown dampening type '%s'" % dampening)
+    dampfunc = mk_frequency_dampening_func(dampening)
 
     # Set algorithm parameters
     if algorithm == 'viterbi':
@@ -84,10 +87,10 @@ def mkmodel(data, trainmode='init+batch', forcesplit=['-'], corpusweight=1.0, sk
     c = model.load_data(data, freqthreshold, dampfunc, splitprob)
     e, c = model.train_batch(algorithm, algparams, finish_threshold, maxepochs)
 
-    te = arrow.now()
+    tend = arrow.now()
     LOG.info("Epochs: {}".format(e))
     LOG.info("Final cost: {}".format(c))
-    LOG.info("Training time: {}".format(te - ts))
+    LOG.info("Training time: {}".format(tend - tstart))
 
     return model
 

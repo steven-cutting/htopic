@@ -1,7 +1,9 @@
 from setuptools import setup, find_packages
-
-with open("README.md") as fp:
-    THE_LONG_DESCRIPTION = fp.read()
+try:
+    with open("README.md") as fp:
+        THE_LONG_DESCRIPTION = fp.read()
+except IOError:
+    THE_LONG_DESCRIPTION = ""
 
 
 setup(
@@ -28,9 +30,6 @@ setup(
                  'Development Status :: 3 - Alpha',
 
                  'Programming Language :: Python :: 2.7',
-                 'Programming Language :: Python :: 3.3',
-                 'Programming Language :: Python :: 3.4',
-                 'Programming Language :: Python :: 3.5',
 
                  'Development Status :: 2 - Pre-Alpha',
                  ],

@@ -15,6 +15,7 @@ from h_topic_model import textproc_utils as tpu
 @pytest.mark.parametrize("string,expected",
                          [(u"foo bar baz", [u"foo", u"bar", u"baz"]),
                           (u"foo\n bar\tbaz\r\n", [u"foo", u"bar", u"baz"]),
+                          (u"/////(foo),\n\t bar-baz?!\r\n", [u"foo", u"bar", u"baz"]),
                           # Hebrew unicode code points.
                           (u"הוא צילם עליו כתבה", [u'\u05d4\u05d5\u05d0',
                                                   u'\u05e6\u05d9\u05dc\u05dd',
@@ -31,9 +32,11 @@ def test__simple_split_txt(string, expected):
 @pytest.mark.parametrize("string,expected",
                          [([u"foo bar baz",
                             u"foo\n bar\tbaz\r\n",
+                            u"/////(foo),\n\t bar-baz?!\r\n",
                             u"הוא צילם עליו כתבה",
                             ],
                            [u"foo", u"bar", u"baz",
+                            u"foo", u"bar", u"baz",
                             u"foo", u"bar", u"baz",
                             # Hebrew unicode code points.
                             u'\u05d4\u05d5\u05d0',

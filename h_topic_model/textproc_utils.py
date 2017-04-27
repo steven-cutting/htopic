@@ -28,21 +28,32 @@ HPUNCTUATION = {u"\u05f3",  # ׳  U+05f3  HEBREW PUNCTUATION GERESH
                 u"\u007C",  # |  VERTICAL LINE
                 u"\u05be",  # ־  HEBREW PUNCTUATION MAQAF
                 u"\u002d",  # -  HYPHEN-MINUS
+                u"\u002E",  # .  Full stop - period
+                u"\u002C",  # ,  Comma
                 }
 
 
-def remove_h_punct(txt, punctuation=HPUNCTUATION):
+@tlz.curry
+def remove_h_punct(txt, punctuation=HPUNCTUATION, replace=u" "):
     """
     Replaces punctuation, common in Hebrew, with a space.
     Source for punctuation:
         https://en.wikipedia.org/wiki/Hebrew_punctuation
     """
-    return tlz.reduce(lambda string, p: string.replace(p, u" "),
+    return tlz.reduce(lambda string, p: string.replace(p, replace),
                       punctuation,
                       txt)
 
 
-def simple_split_txt(txt):
+def basic_split(txt):
+    """
+    Convenience wrapper for:
+    txt.split()
+    """
+    return txt.split()
+
+
+def split_and_clean(txt):
     """
     Simply split 'txt' on whitespace.
     Return generator of all continuous non-whitespace character
@@ -54,11 +65,11 @@ def simple_split_txt(txt):
                     t2t.punct_to_space,
                     t2t.drop_punct,
                     remove_h_punct,  # rm punctuation common in Hebrew
-                    lambda t: t.split(),
+                    basic_split,
                     tlzc.filter(tlz.identity))  # filter out falsy values
 
 
-def simple_split_many(txts):
+def split_and_clean_many(txts):
     """
     Creates a single sequence of all of the continuous non-whitespace
     character sequences (e.g. words, punctuation, etc.) from all of the strings
@@ -66,4 +77,4 @@ def simple_split_many(txts):
 
     For best results the strings in txts should be unicode strings.
     """
-    return tlz.mapcat(simple_split_txt, txts)
+    return tlz.mapcat(split_and_clean, txts)

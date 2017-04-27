@@ -10,6 +10,11 @@ General utils that can be used thoughout the package.
 import os
 import json
 
+try:
+    import cytoolz as tlz
+except ImportError:
+    import toolz as tlz
+
 from text2math import raw2text as r2t
 from text2math.raw2text import verify_unicode, verify_bytestring
 
@@ -26,13 +31,14 @@ def spelunker_gen(rootdir):
             yield os.path.join(dirname, fname)
 
 
-def load_and_decode(filename):
+@tlz.curry
+def load_and_decode(filename, encoding='utf-8'):
     """
     Reads files and handles any decoding issues.
     Returns text from file as Unicode.
     """
     with open(filename) as t:
-        return r2t.adv_decode(t.read())
+        return r2t.adv_decode(t.read(), encoding=encoding)
 
 
 def ensure_bytestring(string, encoding='utf-8'):

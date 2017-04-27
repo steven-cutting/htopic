@@ -7,7 +7,6 @@ __created_on__ = '03/24/2017'
 
 from tempfile import NamedTemporaryFile
 
-import toolz as tlz
 import pytest
 
 

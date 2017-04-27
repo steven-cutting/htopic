@@ -15,6 +15,24 @@ from h_topic_model import textproc_utils as tpu
 @pytest.mark.parametrize("string,expected",
                          [(u"foo bar baz", [u"foo", u"bar", u"baz"]),
                           (u"foo\n bar\tbaz\r\n", [u"foo", u"bar", u"baz"]),
+                          (u"/////(foo),\n\t bar-baz?!\r\n", [u"/////(foo),",
+                                                              u"bar-baz?!"]),
+                          # Hebrew unicode code points.
+                          (u"הוא צילם עליו כתבה", [u'\u05d4\u05d5\u05d0',
+                                                  u'\u05e6\u05d9\u05dc\u05dd',
+                                                  u'\u05e2\u05dc\u05d9\u05d5',
+                                                  u'\u05db\u05ea\u05d1\u05d4'])
+                          ])
+def test__basic_split(string, expected):
+    assert(tlz.pipe(string,
+                    tpu.basic_split,
+                    list) ==
+           expected)
+
+
+@pytest.mark.parametrize("string,expected",
+                         [(u"foo bar baz", [u"foo", u"bar", u"baz"]),
+                          (u"foo\n bar\tbaz\r\n", [u"foo", u"bar", u"baz"]),
                           (u"/////(foo),\n\t bar-baz?!\r\n", [u"foo", u"bar", u"baz"]),
                           # Hebrew unicode code points.
                           (u"הוא צילם עליו כתבה", [u'\u05d4\u05d5\u05d0',
@@ -22,9 +40,9 @@ from h_topic_model import textproc_utils as tpu
                                                   u'\u05e2\u05dc\u05d9\u05d5',
                                                   u'\u05db\u05ea\u05d1\u05d4'])
                           ])
-def test__simple_split_txt(string, expected):
+def test__split_and_clean(string, expected):
     assert(tlz.pipe(string,
-                    tpu.simple_split_txt,
+                    tpu.split_and_clean,
                     list) ==
            expected)
 
@@ -45,8 +63,8 @@ def test__simple_split_txt(string, expected):
                             u'\u05db\u05ea\u05d1\u05d4',
                             ])
                           ])
-def test__simple_split_many(string, expected):
+def test__split_and_clean_many(string, expected):
     assert(tlz.pipe(string,
-                    tpu.simple_split_many,
+                    tpu.split_and_clean_many,
                     list) ==
            expected)

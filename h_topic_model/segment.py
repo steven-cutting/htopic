@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-
+"""
+Module uses Morfessor to segment words.
+"""
 __title__ = 'h_topic_model'
 __author__ = 'Steven Cutting'
 __author_email__ = 'steven.e.cutting@gmail.com'
 __created_on__ = '03/25/2017'
-__doc__ = """
-Module uses Morfessor to segment words.
-"""
+
 
 import logging
 
@@ -76,7 +76,7 @@ def segment_text(model, txt, flatten=True):
     Curried.
     """
     return tlz.pipe(txt,
-                    tpu.simple_split_txt,
+                    tpu.split_and_clean,
                     tlzc.map(mk_segmenter(model)),
                     should_flatten(flatten),
                     # tlz.concat,

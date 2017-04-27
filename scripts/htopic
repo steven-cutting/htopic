@@ -7,12 +7,10 @@ __author_email__ = 'steven.e.cutting@gmail.com'
 __created_on__ = '03/28/2017'
 
 
-import subprocess
 import logging
 import sys
 import os
 from os import path
-from pprint import pprint
 
 import click
 from arrow import now
@@ -23,6 +21,8 @@ except ImportError:
     import toolz as tlz
     from toolz import curried as tlzc
 
+from text2math import raw2text as r2t
+
 from scripts import s_utils as su
 from h_topic_model import utils as u
 from h_topic_model import textproc_utils as tpu
@@ -31,6 +31,7 @@ from h_topic_model import segmodel as sm
 from h_topic_model import segment as seg
 from h_topic_model import bagofwords as bow
 from h_topic_model import gmodels as gm
+from h_topic_model import mklabled as ml
 
 
 LOG = logging.getLogger(__name__)
@@ -86,22 +87,24 @@ def cli(ctx, loglvl, logfile, random_state):
                             D_WC_FILE_P]))
 @click.option("--prob", "-P", default=1.0, type=float,
               help="Probability a file will be chosen. Create a random sample. 1.0 = 100%")
+@click.option("--encoding", "-E", default="utf-8",
+              help="Character encoding of the input file.")
 @click.pass_context
-def mkwc(ctx, input_directory, wcfile, prob):
+def mkwc(ctx, input_directory, wcfile, prob, encoding):
 
     LOG.info("Starting mkwc")
 
     filenames = tlz.random_sample(prob=prob,
                                   seq=u.spelunker_gen(input_directory),
                                   random_state=ctx.obj["RANDOMSTATE"])
-    txts = tlz.map(u.load_and_decode, filenames)
+    txts = tlz.map(u.load_and_decode(encoding=encoding), filenames)
 
-    tokenFreqs = tlz.pipe(txts, tpu.simple_split_many, wc.count_tokens)
+    tokenFreqs = tlz.pipe(txts, tpu.split_and_clean_many, wc.count_tokens)
 
     wc.token_counts_to_cvs(wcfile, tokenFreqs)  # dont sort it's not needed
     #                                           # , sort_f=wc.sort_token_counts)
 
-    runtime = su.log_run_time(ctx.obj["STARTTIME"])
+    su.log_run_time(ctx.obj["STARTTIME"])
     LOG.info("Finished mkwc")
 
 
@@ -127,7 +130,6 @@ def mkwc(ctx, input_directory, wcfile, prob):
 @click.pass_context
 def morfessor(ctx, morf_model_file, wcfile, encoding):
     LOG.info("Starting morfessor")
-    logfile = ctx.obj["LOGFILE"]
     randomState = ctx.obj["RANDOMSTATE"]
 
     LOG.info("Loading word count file {}".format(wcfile))
@@ -153,7 +155,7 @@ def morfessor(ctx, morf_model_file, wcfile, encoding):
     #                  "-s", morf_model_file,
     #                  wcfile])
 
-    runtime = su.log_run_time(ctx.obj["STARTTIME"])
+    su.log_run_time(ctx.obj["STARTTIME"])
     LOG.info("Finished morfessor")
 
 
@@ -194,9 +196,9 @@ def mkcorpus(ctx, input_directory, morf_model_file, dict_file, corpus_file, prob
 
     # -- Tokenizing input texts --
     tokensSeqs = tlz.pipe(seg.segment_many(model, txts),
-                        tlzc.map(bow.filter_tokens),
-                        tlzc.map(list),
-                        list)
+                          tlzc.map(bow.filter_tokens),
+                          tlzc.map(list),
+                          list)
 
     LOG.info("Number of token sets {}".format(len(tokensSeqs)))
 
@@ -219,7 +221,7 @@ def mkcorpus(ctx, input_directory, morf_model_file, dict_file, corpus_file, prob
     LOG.info("Saving Gensim corpus to: {}".format(corpus_file))
     bow.save_corpus(corpus_file, bowCorpus)
 
-    runtime = su.log_run_time(ctx.obj["STARTTIME"])
+    su.log_run_time(ctx.obj["STARTTIME"])
     LOG.info("Finished mkcorpus")
 
 
@@ -266,7 +268,7 @@ def mkmodel(ctx, topic_model_dir, dict_file, corpus_file):
     LOG.info("Saving Gensim LDA model to: {}".format(D_G_LDA_FILE))
     gm.save_model(path.join(topic_model_dir, D_G_LDA_FILE), ldaModel)
 
-    runtime = su.log_run_time(ctx.obj["STARTTIME"])
+    su.log_run_time(ctx.obj["STARTTIME"])
     LOG.info("Finished mkcorpus")
 
 
@@ -329,6 +331,44 @@ def gettopics(ctx, topic_model_dir):
         # print(u'-----------\t\t----')
         for prob, word in topic:
             print(u"\t{}".format(prob, word).encode("utf-8"))
+
+
+@cli.command(help="""
+ """)
+@click.option("--inputfile", "-I", type=str, default=None,
+              help="If not provide use stdin.")
+@click.option("--outputfile", "-O", type=str, default=None,
+              help="If not provided use stdout")
+@click.option("--segmarker", "-S", type=str, default=ml.OGMARKER,
+              help="If not provided use stdout")
+@click.option("--encoding", "-E", type=str, default="utf-8",
+              help="Input encoding")
+@click.pass_context
+def mkannot(ctx, inputfile, outputfile, segmarker, encoding):
+
+    LOG.info("Starting mkannot")
+
+    if inputfile:
+        with open(inputfile) as f:
+            lines = [r2t.adv_decode(txt, encoding=encoding) for txt in f.readlines()]
+    else:
+        lines = (r2t.adv_decode(l, encodeing=encoding) for l in click.get_text_stream('stdin'))
+
+    output = tlz.pipe(lines,
+                      ml.get_seg_tokens(ogmarker=segmarker),
+                      ml.mk_comp_and_annots,
+                      ml.annot_file_format_many)
+    LOG.info("Writing output")
+    if outputfile:
+        with open(outputfile, "w+") as f:
+            for line in list(output):
+                f.write("{}\n".format(line.encode("utf-8")))
+    else:
+        for line in output:
+            click.echo(line.encode("utf-8"))
+
+    su.log_run_time(ctx.obj["STARTTIME"])
+    LOG.info("Finished mkannot")
 
 
 if __name__ == "__main__":

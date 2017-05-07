@@ -11,7 +11,6 @@ Module uses Morfessor to train a segmentation model.
 import locale
 import logging
 import math
-import random
 
 from morfessor import MorfessorIO
 from morfessor import BaselineModel
@@ -36,7 +35,7 @@ def load_data(trainfilespath, encoding=locale.getpreferredencoding(),
                      compound_separator=cseparator,
                      atom_separator=separator,
                      lowercase=lowercase)
-    return io.read_corpus_list_files([trainfilespath,])
+    return io.read_corpus_list_files([trainfilespath, ])
     # return io.read_corpus_file(trainfilespath)
 
 
@@ -54,26 +53,85 @@ def mk_frequency_dampening_func(dampening):
         raise ArgumentException("unknown dampening type {}".format(dampening))
 
 
-def mkmodel(data, trainmode='init+batch', forcesplit=['-'], corpusweight=1.0, skips=False,
-            nosplit=None, freqthreshold=1, splitprob=None, algorithm="recursive",
-            finish_threshold=0.005, maxepochs=None, dampening="ones",
-            viterbismooth=0, viterbimaxlen=30, randseed=None):
+def new_model(forcesplit=['-'], corpusweight=1.0, skips=False, nosplit=None, **kwargs):
     """
-    splitprob - initialize new words by random splitting using the given
-                split probability (default no splitting)
-    algorithm - algorithm type ('recursive', 'viterbi'; default 'recursive')
+    forcesplit - force split on given atoms (default '-'). The list argument
+                 is a string of characthers, use '' for no forced splits.
+    corpusweight - Corpus weight parameter (default 1.0); sets the initial
+                   value if other tuning options are used
+    skips - use random skips for frequently seen compounds to speed up training
+    nosplit - if the expression matches the two surrounding characters, do
+              not allow splitting (default None)
+    """
+    return BaselineModel(forcesplit_list=forcesplit,
+                         corpusweight=corpusweight,
+                         use_skips=skips,
+                         nosplit_re=nosplit)
+
+
+@tlz.curry
+def load_annots_to_model(filename, model, analysisseparator=',', encoding="utf-8",
+                         cseparator=' ', annotationweight=None, **kwargs):
+    """
+    Mutates model!
+
+    model - The morfessor model opbject to add annotations to.
+    filename - Load annotated data for semi-supervised learning.
+    encoding - File encoding, default 'utf-8'.
+    analysisseparator - Separator for different analyses in an annotation file.
+                        Use NONE for only allowing one analysis per line
+    cseparator - Construction separator for test segmentation files.
+    annotationweight - corpus weight parameter for annotated data (if unset,
+                       the weight is set to balance the number of tokens in
+                       annotated and unannotated data sets)
+    """
+    analysis_sep = (analysisseparator
+                    if analysisseparator != 'NONE' else None)
+
+    io = MorfessorIO(encoding=encoding,
+                     compound_separator=cseparator)
+
+    annotations = io.read_annotations_file(filename,
+                                           analysis_sep=analysis_sep)
+    # 364
+    model.set_annotations(annotations, annotationweight)
+
+    return model
+
+
+@tlz.curry
+def maybe_load_annots_to_model(filename, model, **kwargs):
+    """
+    Same as load_annots_to_model except that if 'filename' is None, it will simply
+    return the model.
+    """
+    if filename is not None:
+        return load_annots_to_model(filename, model, **kwargs)
+    else:
+        return model
+
+
+@tlz.curry
+def fit_model(data, model, dampening="ones", algorithm="recursive", viterbismooth=0,
+              viterbimaxlen=30, freqthreshold=1, splitprob=None,
+              finish_threshold=0.005, maxepochs=None, **kwargs):
+    """
+    data - Morfessor corpus object.
     dampening - frequency dampening for training data ('none', 'log', or "
                 'ones'; default 'ones')
+    algorithm - algorithm type ('recursive', 'viterbi'; default 'recursive')
+    viterbismooth - additive smoothing parameter for Viterbi training and
+                    segmentation (default 0)
+    viterbimaxlen - maximum construction length in Viterbi training and
+                    segmentation (default 30)
+    freqthreshold - compound frequency threshold for batch training (default 1)
+    splitprob - initialize new words by random splitting using the given
+                split probability (default no splitting)
+    finish_threshold - Stopping threshold. Training stops when the improvement
+                       of the last iteration is smaller then finish_threshold *
+                       #boundaries; (default 0.005)
+    maxepochs - hard maximum of epochs in training
     """
-    # TODO (sc) DOCS!
-    random.seed(randseed)
-    tstart = arrow.now()
-
-    model = BaselineModel(forcesplit_list=forcesplit,
-                          corpusweight=corpusweight,
-                          use_skips=skips,
-                          nosplit_re=nosplit)
-
     # Set frequency dampening function
     dampfunc = mk_frequency_dampening_func(dampening)
 
@@ -83,16 +141,22 @@ def mkmodel(data, trainmode='init+batch', forcesplit=['-'], corpusweight=1.0, sk
     else:
         algparams = ()
 
-    # if trainmode == 'init+batch':
     c = model.load_data(data, freqthreshold, dampfunc, splitprob)
-    e, c = model.train_batch(algorithm, algparams, finish_threshold, maxepochs)
+    epochs, cost = model.train_batch(algorithm, algparams, finish_threshold, maxepochs)
 
-    tend = arrow.now()
-    LOG.info("Epochs: {}".format(e))
-    LOG.info("Final cost: {}".format(c))
-    LOG.info("Training time: {}".format(tend - tstart))
+    LOG.info("Epochs: {}".format(epochs))
+    LOG.info("Final cost: {}".format(cost))
 
     return model
+
+
+def mkmodel(data, annotfile=None, **kwargs):
+    """
+    annotfile - File path for annotation file.
+    """
+    return tlz.pipe(new_model(**kwargs),
+                    maybe_load_annots_to_model(annotfile, **kwargs),
+                    fit_model(data, **kwargs))
 
 
 def save_model(savefile, model):

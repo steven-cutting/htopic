@@ -8,7 +8,7 @@ __created_on__ = '03/24/2017'
 import pytest
 
 
-from h_topic_model.scripts import s_utils as su
+from h_topic_model import _scriptutils as su
 
 
 k_error = pytest.mark.xfail(raises=KeyError,

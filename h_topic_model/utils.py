@@ -55,11 +55,11 @@ def package_dir():
     return os.path.dirname(h_topic_model.__file__)
 
 
-def full_pkg_file_path(filename):
+def full_pkg_file_path(filename, package_dir_f=package_dir):
     """
     'filename' should be the path of the file relative to the package root.
     """
-    return os.path.join(package_dir(), filename)
+    return os.path.join(package_dir_f(), filename)
 
 
 def open_pkg_json_file(filename):

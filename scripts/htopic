@@ -11,6 +11,7 @@ import logging
 import sys
 import os
 from os import path
+import random
 
 import click
 from arrow import now
@@ -23,7 +24,6 @@ except ImportError:
 
 from text2math import raw2text as r2t
 
-from scripts import s_utils as su
 from h_topic_model import utils as u
 from h_topic_model import textproc_utils as tpu
 from h_topic_model import wcfile as wc
@@ -32,6 +32,8 @@ from h_topic_model import segment as seg
 from h_topic_model import bagofwords as bow
 from h_topic_model import gmodels as gm
 from h_topic_model import mklabled as ml
+
+from h_topic_model import _scriptutils as su
 
 
 LOG = logging.getLogger(__name__)
@@ -65,6 +67,8 @@ def cli(ctx, loglvl, logfile, random_state):
     ctx.obj["LOGFILE"] = logfile
     ctx.obj["STARTTIME"] = now()
     ctx.obj["RANDOMSTATE"] = random_state
+
+    random.seed(random_state)
 
     logging.basicConfig(format=LOGFMT,
                         level=su.str_to_log_level_code(loglvl),
@@ -122,21 +126,25 @@ def mkwc(ctx, input_directory, wcfile, prob, encoding):
 @click.option("--wcfile", "-W", type=str, default=D_WC_FILE_P,
               help="".join(["Token source for morfessor-train. Default: ",
                             D_WC_FILE_P]))
+@click.option("--annotfile", "-A", type=str, default=None,
+              help="Path to annotation file. (default no file)")
 @click.option("--morf_model_file", "-M", type=str, default=D_MORF_MODEL_FILE_P,
               help="".join(["Save morfessor model to this file. Default: ",
                             D_MORF_MODEL_FILE_P]))
+@click.option("--splitprob", type=float, default=None,
+              help="".join(["initialize new words by random splitting using the given",
+                            "split probability (default no splitting)"]))
 @click.option("--encoding", "-E", default="utf-8",
               help="Character encoding of the wcfile file.")
 @click.pass_context
-def morfessor(ctx, morf_model_file, wcfile, encoding):
+def morfessor(ctx, morf_model_file, annotfile, wcfile, splitprob, encoding):
     LOG.info("Starting morfessor")
-    randomState = ctx.obj["RANDOMSTATE"]
 
     LOG.info("Loading word count file {}".format(wcfile))
     tokendata = sm.load_data(wcfile, encoding=encoding)
 
     LOG.info("Fitting morfessor segmentation model")
-    model = sm.mkmodel(tokendata, randseed=randomState)
+    model = sm.mkmodel(tokendata, annotfile=annotfile, splitprob=splitprob)
 
     LOG.info("Saving morfessor segmentation model to {}".format(morf_model_file))
     sm.save_model(morf_model_file, model)
@@ -146,14 +154,6 @@ def morfessor(ctx, morf_model_file, wcfile, encoding):
                         lambda f: ''.join([f, "-segmentations.txt"]))
     LOG.info("Saving segmentation file to {}".format(seg_file))
     sm.save_segmentations(seg_file, model)
-
-    # subprocess.call(["morfessor-train",
-    #                  "--encoding={}".format(encoding),
-    #                  "--randseed={}".format(randomState) if randomState else "",
-    #                  "--traindata-list",
-    #                  "--logfile={}".format(logfile) if logfile else "",
-    #                  "-s", morf_model_file,
-    #                  wcfile])
 
     su.log_run_time(ctx.obj["STARTTIME"])
     LOG.info("Finished morfessor")
@@ -334,6 +334,8 @@ def gettopics(ctx, topic_model_dir):
 
 
 @cli.command(help="""
+    Accepts text that contains words with segmentation markers and creates
+    a Morfessor annotation file.
  """)
 @click.option("--inputfile", "-I", type=str, default=None,
               help="If not provide use stdin.")

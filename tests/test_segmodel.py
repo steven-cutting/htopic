@@ -44,7 +44,9 @@ def test__mkmodel():
             for row in inputdata:
                 csv_out.writerow(row)
 
-        model = sm.mkmodel(sm.load_data(f.name))
+        # print list(sm.load_data(f.name))
+        model = sm.mkmodel(list(sm.load_data(f.name)))
+        print model
         assert(list(model.get_segmentations()))
 
 
